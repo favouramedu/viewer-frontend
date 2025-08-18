@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Watch</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a href="dashboard.html">Dashboard</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <h1 id="video-title"></h1>
+    <video id="player" controls class="player">
+      <source src="" type="video/mp4"/>
+    </video>
+
+    <section class="meta">
+      <h3>Details</h3>
+      <p>Publisher: <span data-field="publisher"></span></p>
+      <p>Producer: <span data-field="producer"></span></p>
+      <p>Genre: <span data-field="genre"></span></p>
+      <p>Age rating: <span data-field="age-rating"></span></p>
+    </section>
+
+    <section class="panel">
+      <h3>Rate</h3>
+      <form id="rate-form">
+        <select id="stars">
+          <option>5</option><option>4</option><option>3</option><option>2</option><option>1</option>
+        </select>
+        <button>Submit</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h3>Comments</h3>
+      <ul id="comments-list" class="comments"></ul>
+      <form id="comment-form" class="comment-form">
+        <input id="comment-text" placeholder="Write a comment…" />
+        <button>Post</button>
+      </form>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

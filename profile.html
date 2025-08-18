@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Profile</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+  <main class="container">
+    <h1>Profile (/.auth/me)</h1>
+    <pre id="out">Loading…</pre>
+  </main>
+  <script>
+    (async()=>{
+      try{
+        const r = await fetch('/.auth/me', {credentials:'include'});
+        const t = await r.text();
+        document.getElementById('out').textContent = t;
+      }catch(e){ document.getElementById('out').textContent = String(e); }
+    })();
+  </script>
+</body>
+</html>
