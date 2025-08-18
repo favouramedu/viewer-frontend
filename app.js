@@ -1,133 +1,305 @@
-(()=>{
+((() => {
+  'use strict';
+
+  /**********************
+   * CONFIG
+   **********************/
+  // Point the frontend at your Azure Function App
   window.VIEWER_CONFIG = {
-    apiBase: 'https://func-viewer-ecd3gpgfcxbwaqb3.eastus-01.azurewebsites.net/api'
+    apiBase:
+      'https://func-viewer-ecd3gpgfcxbwaqb3.eastus-01.azurewebsites.net/api',
   };
 
+  /**********************
+   * AUTH BRIDGE (optional)
+   * Pull the SWA identity and pass it to Functions so
+   * your backend can know who the user is.
+   **********************/
   let PRINCIPAL_B64 = null;
-  (async ()=>{
-    try{
-      const r = await fetch('/.auth/me', { credentials:'include' });
-      if(r.ok){
+  (async () => {
+    try {
+      const r = await fetch('/.auth/me', { credentials: 'include' });
+      if (r.ok) {
         const d = await r.json();
-        const me = Array.isArray(d) ? d[0] : (d && d.clientPrincipal) || null;
-        if(me) PRINCIPAL_B64 = btoa(JSON.stringify(me));
+        const me = Array.isArray(d) ? d[0] : d?.clientPrincipal || null;
+        if (me) PRINCIPAL_B64 = btoa(JSON.stringify(me));
       }
-    }catch{}
+    } catch {
+      /* ignore */
+    }
   })();
 
-  const API = (p, opts={})=>{
-    const base = (window.VIEWER_CONFIG && window.VIEWER_CONFIG.apiBase) || '/api';
-    const headers = { 'Content-Type':'application/json', ...(opts.headers||{}) };
-    if(PRINCIPAL_B64) headers['x-ms-client-principal'] = PRINCIPAL_B64;
-    return fetch(base + p, {
+  /**********************
+   * UTILITIES
+   **********************/
+  const qs = (s, r = document) => r.querySelector(s);
+  const qsa = (s, r = document) => [...r.querySelectorAll(s)];
+  const byId = (id) => document.getElementById(id);
+
+  // Generic API caller
+  const API = (path, opts = {}) => {
+    const base = window.VIEWER_CONFIG?.apiBase || '/api';
+    const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+    if (PRINCIPAL_B64) headers['x-ms-client-principal'] = PRINCIPAL_B64;
+
+    return fetch(base + path, {
       method: opts.method || 'GET',
       headers,
       credentials: 'include',
-      body: opts.body ? JSON.stringify(opts.body) : undefined
-    }).then(async r=>{
-      if(!r.ok) throw new Error(await r.text());
-      const ct = r.headers.get('content-type')||'';
+      body: opts.body ? JSON.stringify(opts.body) : undefined,
+    }).then(async (r) => {
+      if (!r.ok) {
+        const t = await r.text().catch(() => '');
+        throw new Error(t || `HTTP ${r.status}`);
+      }
+      const ct = r.headers.get('content-type') || '';
       return ct.includes('json') ? r.json() : r.text();
     });
   };
 
-  const $ = s => document.querySelector(s);
-  const byId = id => document.getElementById(id);
+  const safeText = (v, d = '') => (v == null ? d : String(v));
+  const fmtDate = (s) => (s ? s.slice(0, 10) : '');
 
-  async function me(){ try { return await API('/me'); } catch { return null; } }
+  /**********************
+   * BACKEND HELPERS
+   **********************/
+  async function me() {
+    try {
+      return await API('/me');
+    } catch {
+      return null;
+    }
+  }
 
-  async function initIndex(){
-    if (!$('#feed')) return;
+  /**********************
+   * PAGES
+   **********************/
+  // Home / listing page
+  async function initIndex() {
+    const feed = byId('feed');
+    if (!feed) return;
+
+    // Top-right pill
     const pill = byId('user-pill');
-    const user = await me();
-    if (user){ pill.style.display='inline-block'; pill.textContent = `Signed in: ${user.name||user.userId}`; }
+    try {
+      const user = await me();
+      if (user && pill) {
+        pill.style.display = 'inline-block';
+        pill.textContent = `Signed in: ${user.name || user.userId}`;
+      }
+    } catch {}
 
-    const q = new URLSearchParams(location.search).get('q')||'';
-    const list = await API(`/videos?search=${encodeURIComponent(q)}`);
-    const feed = byId('feed'); feed.innerHTML='';
-    list.forEach(v => {
-      const card = document.createElement('article'); card.className='video-card';
-      card.innerHTML = `
+    // Search
+    const q = new URLSearchParams(location.search).get('q') || '';
+    let list = [];
+    try {
+      list = await API(`/videos?search=${encodeURIComponent(q)}`);
+    } catch (e) {
+      feed.innerHTML = `<p class="muted">Couldn’t load videos: ${safeText(e.message)}</p>`;
+      return;
+    }
+
+    feed.innerHTML = '';
+    if (!Array.isArray(list) || list.length === 0) {
+      feed.innerHTML = `<p class="muted">No videos found.</p>`;
+      return;
+    }
+
+    list.forEach((v) => {
+      const el = document.createElement('article');
+      el.className = 'video-card';
+      el.innerHTML = `
         <a href="watch.html?id=${encodeURIComponent(v.id)}">
-          <img src="${v.thumbUrl||''}" alt="">
+          <img src="${safeText(v.thumbUrl)}" alt="">
         </a>
-        <header><h2><a href="watch.html?id=${encodeURIComponent(v.id)}">${v.title||'Untitled'}</a></h2></header>
-        <p>${v.publisher||''} • ${v.genre||''} • ${v.ageRating||''}</p>
-        <footer><a href="watch.html?id=${encodeURIComponent(v.id)}">Open</a></footer>`;
-      feed.appendChild(card);
+        <header>
+          <h2><a href="watch.html?id=${encodeURIComponent(v.id)}">${safeText(v.title, 'Untitled')}</a></h2>
+        </header>
+        <p>${safeText(v.publisher)} • ${safeText(v.genre)} • ${safeText(v.ageRating)}</p>
+        <footer>
+          <a href="watch.html?id=${encodeURIComponent(v.id)}">Open</a>
+        </footer>
+      `;
+      feed.appendChild(el);
     });
   }
 
-  async function initWatch(){
-    const player = byId('player'); if(!player) return;
+  // Watch page
+  async function initWatch() {
+    const player = byId('player');
+    if (!player) return;
+
     const id = new URLSearchParams(location.search).get('id');
-    if(!id){ location.href = '/'; return; }
-    const v = await API(`/videos/${id}`);
-    byId('video-title').textContent = v.title||'Video';
-    [['publisher',v.publisher],['producer',v.producer],['genre',v.genre],['age-rating',v.ageRating]].forEach(([k,val])=>{
-      const e = document.querySelector(`[data-field="${k}"]`); if(e) e.textContent = val||'';
+    if (!id) {
+      location.href = '/';
+      return;
+    }
+
+    let v;
+    try {
+      v = await API(`/videos/${encodeURIComponent(id)}`);
+    } catch (e) {
+      byId('watch-container')?.insertAdjacentHTML(
+        'afterbegin',
+        `<p class="error">Couldn’t load video: ${safeText(e.message)}</p>`
+      );
+      return;
+    }
+
+    byId('video-title').textContent = safeText(v.title, 'Video');
+
+    // Fill metadata fields
+    [
+      ['publisher', v.publisher],
+      ['producer', v.producer],
+      ['genre', v.genre],
+      ['age-rating', v.ageRating],
+    ].forEach(([k, val]) => {
+      const el = document.querySelector(`[data-field="${k}"]`);
+      if (el) el.textContent = safeText(val);
     });
-    player.querySelector('source').src = v.hlsUrl || v.blobUrl || '';
+
+    // Load source
+    const src = v.hlsUrl || v.blobUrl || '';
+    player.querySelector('source').src = src;
     player.load();
 
-    const comments = await API(`/videos/${id}/comments`);
-    const list = byId('comments-list'); list.innerHTML='';
-    comments.forEach(c => {
-      const li = document.createElement('li');
-      li.textContent = `${c.user||'anon'}: ${c.text}`;
-      list.appendChild(li);
-    });
-    byId('comment-form')?.addEventListener('submit', async (e)=>{
+    // Comments
+    const list = byId('comments-list');
+    try {
+      const comments = await API(`/videos/${encodeURIComponent(id)}/comments`);
+      list.innerHTML = '';
+      (comments || []).forEach((c) => {
+        const li = document.createElement('li');
+        li.textContent = `${safeText(c.user, 'anon')}: ${safeText(c.text)}`;
+        list.appendChild(li);
+      });
+    } catch {
+      list.innerHTML = '<li class="muted">No comments</li>';
+    }
+
+    // Add comment
+    const commentForm = byId('comment-form');
+    commentForm?.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const text = byId('comment-text').value.trim(); if(!text) return;
-      await API(`/videos/${id}/comments`, { method:'POST', body:{ text } });
+      const text = byId('comment-text')?.value?.trim();
+      if (!text) return;
+      await API(`/videos/${encodeURIComponent(id)}/comments`, {
+        method: 'POST',
+        body: { text },
+      });
       location.reload();
     });
-    byId('rate-form')?.addEventListener('submit', async (e)=>{
+
+    // Rate
+    const rateForm = byId('rate-form');
+    rateForm?.addEventListener('submit', async (e) => {
       e.preventDefault();
-      await API(`/videos/${id}/ratings`, { method:'POST', body:{ stars: Number(byId('stars').value||5) } });
+      const stars = Number(byId('stars')?.value || 5);
+      await API(`/videos/${encodeURIComponent(id)}/ratings`, {
+        method: 'POST',
+        body: { stars },
+      });
       alert('Thanks!');
     });
   }
 
-  async function initUpload(){
-    const form = byId('upload-form'); if(!form) return;
-    form.addEventListener('submit', async (e)=>{
+  // Upload page
+  async function initUpload() {
+    const form = byId('upload-form');
+    if (!form) return;
+
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const file = byId('file').files[0]; if(!file) return alert('Pick a file');
+
+      const file = byId('file')?.files?.[0];
+      if (!file) return alert('Pick a file');
+
       const meta = {
-        title: byId('title').value.trim(),
-        publisher: byId('publisher').value.trim(),
-        producer: byId('producer').value.trim(),
-        genre: byId('genre').value,
-        ageRating: byId('age-rating').value,
-        ext: (file.name.split('.').pop()||'mp4').toLowerCase()
+        title: byId('title')?.value?.trim(),
+        publisher: byId('publisher')?.value?.trim(),
+        producer: byId('producer')?.value?.trim(),
+        genre: byId('genre')?.value,
+        ageRating: byId('age-rating')?.value,
+        ext: (file.name.split('.').pop() || 'mp4').toLowerCase(),
       };
-      const init = await API('/videos/init', { method:'POST', body: meta });
-      const put = await fetch(init.sasUrl, { method:'PUT', headers:{'x-ms-blob-type':'BlockBlob'}, body: file });
-      if(!put.ok) throw new Error('Blob upload failed');
-      await API(`/videos/${init.videoId}/finalize`, { method:'POST', body: meta });
-      alert('Uploaded!'); location.href='dashboard.html';
+
+      try {
+        // 1) Ask backend for SAS and a videoId
+        const init = await API('/videos/init', { method: 'POST', body: meta });
+
+        // 2) Upload blob directly to Storage
+        const put = await fetch(init.sasUrl, {
+          method: 'PUT',
+          headers: { 'x-ms-blob-type': 'BlockBlob' },
+          body: file,
+        });
+        if (!put.ok) throw new Error('Blob upload failed');
+
+        // 3) Finalize on backend
+        await API(`/videos/${encodeURIComponent(init.videoId)}/finalize`, {
+          method: 'POST',
+          body: meta,
+        });
+
+        alert('Uploaded!');
+        location.href = 'dashboard.html';
+      } catch (err) {
+        alert(`Upload failed: ${safeText(err.message)}`);
+      }
     });
   }
 
-  async function initDashboard(){
-    const tbody = document.querySelector('table tbody'); if(!tbody) return;
-    const list = await API('/videos');
-    tbody.innerHTML='';
-    list.forEach(v => {
+  // Dashboard page
+  async function initDashboard() {
+    const tbody = qs('table tbody');
+    if (!tbody) return;
+
+    let list = [];
+    try {
+      list = await API('/videos');
+    } catch (e) {
+      tbody.innerHTML = `<tr><td colspan="6" class="error">Couldn’t load list: ${safeText(
+        e.message
+      )}</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = '';
+    if (!Array.isArray(list) || list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" class="muted">No videos yet.</td></tr>`;
+      return;
+    }
+
+    list.forEach((v) => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${v.title||''}</td><td>${v.status||''}</td><td>${(v.createdAt||'').slice(0,10)}</td><td>${v.views||0}</td><td>${v.ratingAvg||'—'}</td>
-      <td><a href="watch.html?id=${encodeURIComponent(v.id)}">Open</a></td>`;
+      tr.innerHTML = `
+        <td>${safeText(v.title)}</td>
+        <td>${safeText(v.status)}</td>
+        <td>${fmtDate(v.createdAt)}</td>
+        <td>${safeText(v.views, 0)}</td>
+        <td>${safeText(v.ratingAvg, '—')}</td>
+        <td><a href="watch.html?id=${encodeURIComponent(v.id)}">Open</a></td>
+      `;
       tbody.appendChild(tr);
     });
   }
 
-  document.addEventListener('DOMContentLoaded', ()=>{
-    initIndex(); initWatch(); initUpload(); initDashboard();
-    document.querySelector('form[role="search"]')?.addEventListener('submit', (e)=>{
+  /**********************
+   * WIRE-UP
+   **********************/
+  document.addEventListener('DOMContentLoaded', () => {
+    // Run the right initializer(s) depending on which elements exist
+    initIndex();
+    initWatch();
+    initUpload();
+    initDashboard();
+
+    // Search form (if present)
+    const searchForm = qs('form[role="search"]');
+    searchForm?.addEventListener('submit', (e) => {
       e.preventDefault();
-      const q = document.getElementById('q').value.trim();
+      const q = byId('q')?.value?.trim() || '';
       location.href = q ? `/?q=${encodeURIComponent(q)}` : '/';
     });
   });
