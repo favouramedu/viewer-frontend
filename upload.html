@@ -1,37 +1,46 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Upload</title>
-  <link rel="stylesheet" href="styles.css"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Viewer • Upload</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="topbar">
     <nav class="nav">
       <a href="/">Home</a>
+      <strong>Upload</strong>
       <a href="dashboard.html">Dashboard</a>
+      <a href="/.auth/logout">Sign out</a>
     </nav>
   </header>
 
-  <main class="container">
+  <main>
     <h1>Upload a video</h1>
-    <form id="upload-form" class="form">
-      <label>File<input id="file" type="file" accept="video/*" required /></label>
-      <label>Title<input id="title" required /></label>
-      <label>Publisher<input id="publisher" /></label>
-      <label>Producer<input id="producer" /></label>
+
+    <form id="upload-form" class="stack">
+      <label>File <input id="file" type="file" accept="video/*" required /></label>
+
+      <label>Title <input id="title" required /></label>
+      <label>Publisher <input id="publisher" required /></label>
+      <label>Producer <input id="producer" required /></label>
+
       <label>Genre
         <select id="genre">
-          <option>Action</option><option>Comedy</option><option>Drama</option><option>Music</option>
+          <option>Action</option><option>Drama</option><option>Comedy</option>
+          <option>Documentary</option><option>Other</option>
         </select>
       </label>
+
       <label>Age rating
         <select id="age-rating">
-          <option>G</option><option>PG</option><option>PG-13</option><option>R</option>
+          <option>G</option><option>PG</option><option>12</option>
+          <option>15</option><option>18</option>
         </select>
       </label>
-      <button>Submit</button>
+
+      <button type="submit">Submit</button>
     </form>
   </main>
 
