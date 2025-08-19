@@ -1,11 +1,11 @@
 {
-  "navigationFallback": {
-    "rewrite": "/index.html"
-  },
-  "responseOverrides": {
-    "401": {
-      "redirect": "/auth.html",
-      "statusCode": 302
-    }
+  "navigationFallback": { "rewrite": "index.html", "exclude": ["/assets/*", "/api/*", "/images/*"] },
+  "routes": [
+    { "route": "/dashboard.html", "allowedRoles": ["authenticated"] },
+    { "route": "/upload.html",     "allowedRoles": ["authenticated"] },
+    { "route": "/auth/me",         "allowedRoles": ["anonymous"] }
+  ],
+  "globalHeaders": {
+    "Access-Control-Allow-Credentials": "true"
   }
 }
