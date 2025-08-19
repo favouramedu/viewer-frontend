@@ -1,49 +1,48 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Watch</title>
-  <link rel="stylesheet" href="styles.css"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title id="video-title">Viewer • Watch</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="topbar">
     <nav class="nav">
       <a href="/">Home</a>
+      <a href="upload.html">Upload</a>
       <a href="dashboard.html">Dashboard</a>
     </nav>
   </header>
 
-  <main class="container">
-    <h1 id="video-title"></h1>
-    <video id="player" controls class="player">
-      <source src="" type="video/mp4"/>
+  <main class="stack">
+    <video id="player" controls playsinline width="100%">
+      <source src="" type="application/vnd.apple.mpegurl">
     </video>
 
     <section class="meta">
-      <h3>Details</h3>
       <p>Publisher: <span data-field="publisher"></span></p>
       <p>Producer: <span data-field="producer"></span></p>
       <p>Genre: <span data-field="genre"></span></p>
       <p>Age rating: <span data-field="age-rating"></span></p>
     </section>
 
-    <section class="panel">
-      <h3>Rate</h3>
-      <form id="rate-form">
-        <select id="stars">
-          <option>5</option><option>4</option><option>3</option><option>2</option><option>1</option>
-        </select>
-        <button>Submit</button>
+    <section>
+      <h2>Comments</h2>
+      <ul id="comments-list" class="list"></ul>
+      <form id="comment-form" class="row">
+        <input id="comment-text" placeholder="Add a comment…" />
+        <button type="submit">Post</button>
       </form>
     </section>
 
-    <section class="panel">
-      <h3>Comments</h3>
-      <ul id="comments-list" class="comments"></ul>
-      <form id="comment-form" class="comment-form">
-        <input id="comment-text" placeholder="Write a comment…" />
-        <button>Post</button>
+    <section>
+      <h2>Rate</h2>
+      <form id="rate-form" class="row">
+        <select id="stars">
+          <option>5</option><option>4</option><option>3</option><option>2</option><option>1</option>
+        </select>
+        <button type="submit">Submit</button>
       </form>
     </section>
   </main>
