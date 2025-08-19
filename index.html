@@ -1,54 +1,31 @@
-<!-- /index.html -->
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Viewer • Feed</title>
-  <link rel="stylesheet" href="/styles.css" />
-  <!-- hls.js for HLS playback -->
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.8/dist/hls.min.js"></script>
+  <title>Viewer • Home</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
-<body class="theme-dark">
-
-  <!-- Top nav -->
+<body>
   <header class="topbar">
-    <div class="brand">Viewer</div>
-    <form role="search" class="search">
-      <input id="q" placeholder="Search videos…" />
-      <button>Search</button>
-    </form>
-    <nav class="top-actions">
-      <a id="signin" href="/.auth/login/github">Sign in</a>
-      <a id="signout" href="/.auth/logout" style="display:none">Sign out</a>
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a href="upload.html">Upload</a>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="/.auth/login/github" id="signin-link">Sign in</a>
+      <a href="/.auth/logout" id="signout-link">Sign out</a>
       <span id="user-pill" class="pill" style="display:none"></span>
     </nav>
+    <form role="search" class="search">
+      <input id="q" name="q" placeholder="Search videos…" />
+      <button type="submit">Search</button>
+    </form>
   </header>
 
-  <!-- Vertical feed -->
-  <main id="feed" class="feed"></main>
+  <main>
+    <section id="feed" class="grid"><!-- filled by app.js --></section>
+  </main>
 
-  <!-- Comments drawer -->
-  <aside id="comments-drawer" class="drawer">
-    <header>
-      <strong>Comments</strong>
-      <button id="comments-close">✕</button>
-    </header>
-    <ul id="comments-list" class="comments"></ul>
-    <form id="comment-form" class="comment-form">
-      <input id="comment-text" placeholder="Add a comment…" />
-      <button>Send</button>
-    </form>
-  </aside>
-
-  <!-- Bottom nav -->
-  <footer class="bottombar">
-    <a href="/">Home</a>
-    <a href="/upload.html">Upload</a>
-    <a href="/dashboard.html">Dashboard</a>
-    <a href="/profile.html">Profile</a>
-  </footer>
-
-  <script src="/app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
